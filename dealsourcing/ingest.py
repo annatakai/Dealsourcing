@@ -85,9 +85,8 @@ def _read_rows(path: Path):
     rows = ws.iter_rows(min_row=1, values_only=True)
     header = next(rows)
     header_idx = {h: i for i, h in enumerate(header) if h in HEADER_MAP}
-    missing = set(HEADER_MAP) - set(header_idx)
-    if missing:
-        raise ValueError(f"{path.name}: missing expected columns: {sorted(missing)}")
+    if "名前" not in header_idx:
+        raise ValueError(f"{path.name}: missing required column: 名前")
 
     for raw_row in rows:
         name_cell = raw_row[header_idx["名前"]]
@@ -95,7 +94,8 @@ def _read_rows(path: Path):
             continue
         record = {}
         for jp_header, col in HEADER_MAP.items():
-            record[col] = _normalize_value(col, raw_row[header_idx[jp_header]])
+            idx = header_idx.get(jp_header)
+            record[col] = _normalize_value(col, raw_row[idx]) if idx is not None else None
         yield record
     wb.close()
 

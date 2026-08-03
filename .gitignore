@@ -8,7 +8,9 @@ venv/
 data/*.db
 data/initial_exports/*.xlsx
 data/manual_research/*.txt
+data/export/*.csv
 !data/initial_exports/.gitkeep
 !data/manual_research/.gitkeep
+!data/export/.gitkeep
 
 .env
