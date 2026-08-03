@@ -41,16 +41,20 @@ def test_category_assignment_priority(sample_xlsx_factory, row_builder, db_path)
         rows = {r["name"]: r["category"] for r in conn.execute("SELECT name, category FROM companies").fetchall()}
 
     assert rows["EdTech株式会社"] == "EdTech"
-    assert rows["MedTech株式会社"] == "MedTech"
-    assert rows["Consumer株式会社"] == "Consumer"
-    assert rows["Other株式会社"] == "other"
+    # This taxonomy has no dedicated MedTech/Consumer buckets - both verticals
+    # fold into "Tech" (MedTech tag) / "Other" (no vertical tag, just BtoC).
+    assert rows["MedTech株式会社"] == "Tech"
+    assert rows["Consumer株式会社"] == "Other"
+    assert rows["Other株式会社"] == "Other"
 
 
 def test_medtech_tag_is_not_misclassified_as_edtech(sample_xlsx_factory, row_builder, db_path):
     # Regression check: "MedTech" contains the substring "edtech" (case-
     # insensitively), so a naive substring match on "EdTech" would
     # wrongly classify MedTech companies as EdTech. Exact tag-token
-    # matching must prevent that.
+    # matching must prevent that - MedTech should land in "Tech" (this
+    # taxonomy's catch-all for the old MedTech/HealthTech/FinTech verticals),
+    # never "EdTech".
     path = sample_xlsx_factory("a.xlsx", [row_builder("株式会社Med", tags="MedTech")])
     ingest_files([path], db_path=db_path)
     classify_all(db_path=db_path)
@@ -58,4 +62,4 @@ def test_medtech_tag_is_not_misclassified_as_edtech(sample_xlsx_factory, row_bui
     from dealsourcing.db import connect
     with connect(db_path) as conn:
         row = conn.execute("SELECT category FROM companies WHERE name = ?", ("株式会社Med",)).fetchone()
-    assert row["category"] == "MedTech"
+    assert row["category"] == "Tech"

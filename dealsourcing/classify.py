@@ -1,9 +1,9 @@
-"""Eligibility filtering + 9-category classification.
+"""Eligibility filtering + category classification.
 
 Matches the pipeline steps:
     未上場・累計調達額2億円以下を判定
     ↓
-    9カテゴリーに分類
+    カテゴリーに分類（分類数・ルールはconfig/categories.yaml次第）
 
 Eligibility = unlisted (company_type == settings.unlisted_type_value)
               AND total_funding_million_yen <= settings.max_total_funding_million_yen
@@ -33,14 +33,14 @@ def _split_tags(tags: str | None) -> set[str]:
     return {t.strip() for t in tags.split(",") if t.strip()}
 
 
-def classify_category(tags: str | None, industry: str | None, rules: list[dict]) -> str:
+def classify_category(tags: str | None, industry: str | None, rules: list[dict], other_label: str = "other") -> str:
     tag_set = _split_tags(tags)
     for rule in rules:
         if tag_set & set(rule.get("tags", [])):
             return rule["name"]
         if industry and industry in rule.get("industries", []):
             return rule["name"]
-    return "other"
+    return other_label
 
 
 def classify_all(db_path=None) -> dict:
@@ -61,7 +61,7 @@ def classify_all(db_path=None) -> dict:
 
         for row in rows:
             eligible = is_eligible(row["company_type"], row["total_funding_million_yen"])
-            category = classify_category(row["tags"], row["industry"], rules) if eligible else None
+            category = classify_category(row["tags"], row["industry"], rules, other_label) if eligible else None
             if not eligible:
                 category = None
 

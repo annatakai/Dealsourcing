@@ -1,48 +1,34 @@
-# Category rules for classifying INITIAL export rows into the 9 buckets
-# (8 verticals + "その他"/other).
+# Category rules for classifying INITIAL export rows into the 8 buckets
+# (7 verticals + "Other").
 #
 # Matching is against two INITIAL columns:
 #   - tags:     the comma-separated "タグ" column (matched by EXACT token,
-#               e.g. "EdTech" - never substring, since e.g. "MedTech"
-#               contains the literal substring "edtech").
+#               never substring).
 #   - industry: the "業種" column (exact match against the full value).
 #
 # Rules are evaluated top-to-bottom; the FIRST category whose tags OR
 # industries match wins. More specific/rare vertical tags are listed
-# before generic ones (BtoC / Consumer is deliberately last, since ~1/3
-# of all rows carry a BtoC tag and would otherwise swallow everything).
-# Anything matching nothing falls into "other".
+# before generic ones. Anything matching nothing falls into "Other".
+#
+# NOTE: this taxonomy intentionally has no dedicated FinTech/HealthTech/
+# MedTech/Consumer buckets (unlike an earlier version of this file) -
+# those INITIAL tags are folded into "Tech" below since the daily digest
+# only needs these 8 buckets. Retune freely; this is data, not code.
 #
 # This file is meant to be tuned by hand as you see real classification
 # results - it's data, not code.
 
 categories:
   - name: EdTech
-    tags: ["EdTech"]
+    tags: ["EdTech", "教育"]
     industries: []
-
-  - name: FinTech
-    tags: ["FinTech"]
-    industries: ["金融・保険・不動産", "金融・保険・不動産 ICT"]
-
-  - name: HealthTech
-    tags: ["HealthTech"]
-    industries: ["医療・ヘルスケア ICT"]
-
-  - name: MedTech
-    tags: ["MedTech"]
-    industries: ["医療・ヘルスケア", "バイオテクノロジー", "バイオテクノロジー ICT"]
 
   - name: AgriTech
     tags: ["AgriTech", "農業"]
     industries: []
 
-  - name: Media
-    tags: ["メディア", "オウンドメディア", "メディア・エンタメ"]
-    industries: []
-
   - name: DeepTech
-    tags: ["研究開発型"]
+    tags: ["研究開発型", "ハードウェア"]
     industries:
       - "半導体/その他電子部品・製品"
       - "産業・エネルギー"
@@ -52,9 +38,44 @@ categories:
       - "通信・ネットワーキング"
       - "コンピューター - ハードウェア"
 
-  - name: Consumer
-    tags: ["BtoC"]
-    industries: ["消費者向けサービス・販売"]
+  - name: SaaS
+    tags: ["SaaS", "クラウドサービス", "サブスクリプション"]
+    industries: []
+
+  - name: Entertainment
+    tags: ["エンタメ", "メディア・エンタメ"]
+    industries: []
+
+  - name: Media
+    tags: ["メディア", "オウンドメディア"]
+    industries: []
+
+  # Broad tech/software catch-all. Also absorbs the old FinTech/HealthTech/
+  # MedTech verticals, since those are still fundamentally tech businesses
+  # and this taxonomy has no dedicated bucket for them.
+  - name: Tech
+    tags:
+      - "人工知能"
+      - "ジェネレーティブAI"
+      - "ソフトウェア"
+      - "ソフトウェア開発"
+      - "システム開発"
+      - "モバイルアプリ"
+      - "アプリ開発"
+      - "アプリ"
+      - "データ分析"
+      - "FinTech"
+      - "HealthTech"
+      - "MedTech"
+    industries:
+      - "コンピューター - ソフトウェア"
+      - "コンピューター - ITサービス"
+      - "医療・ヘルスケア"
+      - "医療・ヘルスケア ICT"
+      - "バイオテクノロジー"
+      - "バイオテクノロジー ICT"
+      - "金融・保険・不動産"
+      - "金融・保険・不動産 ICT"
 
 # Anything that matches none of the above.
-other_category: "other"
+other_category: "Other"
