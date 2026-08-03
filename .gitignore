@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# INITIAL exports and the SQLite DB are private business data - never commit them.
+data/*.db
+data/initial_exports/*.xlsx
+data/manual_research/*.txt
+!data/initial_exports/.gitkeep
+!data/manual_research/.gitkeep
+
+.env
