@@ -7,13 +7,18 @@ private Google Drive folder ("Genesia Dealsourcing") - never committed to
 this (public) repo alongside real company/founder data.
 
 Usage:
-    python export_for_routine.py [--out-dir DIR]
+    python export_for_routine.py [--out-dir DIR] [--limit N] [--min-id N]
 
-Re-run any time after `python run_ingest.py ...` to refresh candidates.csv
-(safe to overwrite on Drive). sent_log.csv is only written here if it
-doesn't already exist locally - once the routine is live, Drive's copy is
-the source of truth for what's already been sent, and this script must
-never clobber it.
+Uploading to Drive goes through a chat tool call, so the whole eligible
+set (thousands of rows) is too large to move in one go - `--limit` caps
+how many rows this run writes (ordered by id) and `--min-id` skips ahead
+past a batch that's already been uploaded, so refreshing Drive is a
+series of small, cheap top-ups instead of one huge one. The routine only
+processes one company/day, so a batch of a few dozen-hundred lasts weeks.
+
+sent_log.csv is only written here if it doesn't already exist locally -
+once the routine is live, Drive's copy is the source of truth for what's
+already been sent, and this script must never clobber it.
 """
 from __future__ import annotations
 
@@ -34,23 +39,31 @@ SENT_LOG_COLUMNS = [
 ]
 
 
-def export_candidates(out_path: Path) -> int:
+def export_candidates(out_path: Path, min_id: int = 0, limit: int | None = None) -> tuple[int, int, int]:
+    query = f"""
+        SELECT {", ".join(CANDIDATE_COLUMNS)}
+        FROM companies
+        WHERE is_eligible = 1 AND id > ?
+        ORDER BY id ASC
+    """
+    if limit is not None:
+        query += " LIMIT ?"
+        params = (min_id, limit)
+    else:
+        params = (min_id,)
+
     with connect() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT {", ".join(CANDIDATE_COLUMNS)}
-            FROM companies
-            WHERE is_eligible = 1
-            ORDER BY id ASC
-            """
-        ).fetchall()
+        rows = conn.execute(query, params).fetchall()
 
     with out_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(CANDIDATE_COLUMNS)
         for row in rows:
             writer.writerow([row[col] for col in CANDIDATE_COLUMNS])
-    return len(rows)
+
+    first_id = rows[0]["id"] if rows else None
+    last_id = rows[-1]["id"] if rows else None
+    return len(rows), first_id, last_id
 
 
 def ensure_sent_log(out_path: Path) -> bool:
@@ -64,6 +77,8 @@ def ensure_sent_log(out_path: Path) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", default="data/export", help="Directory to write candidates.csv / sent_log.csv into")
+    parser.add_argument("--limit", type=int, default=None, help="Max rows to write, ordered by id (default: all)")
+    parser.add_argument("--min-id", type=int, default=0, help="Only include companies with id > this (default: 0)")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -72,10 +87,13 @@ def main() -> None:
     candidates_path = out_dir / "candidates.csv"
     sent_log_path = out_dir / "sent_log.csv"
 
-    n = export_candidates(candidates_path)
+    n, first_id, last_id = export_candidates(candidates_path, min_id=args.min_id, limit=args.limit)
     created = ensure_sent_log(sent_log_path)
 
-    print(f"Wrote {n} eligible candidate(s) to {candidates_path}")
+    if n:
+        print(f"Wrote {n} eligible candidate(s) (id {first_id}-{last_id}) to {candidates_path}")
+    else:
+        print(f"Wrote 0 eligible candidates to {candidates_path} (no rows with id > {args.min_id})")
     if created:
         print(f"Created empty {sent_log_path} (first run)")
     else:
