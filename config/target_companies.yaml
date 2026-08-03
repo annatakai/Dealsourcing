@@ -1,0 +1,71 @@
+# Company name variants to match against GitHub bio / Qiita profile /
+# connpass organizer "所属" fields when searching for builder candidates,
+# and to weight the background score in config/builder_scoring_prompt.txt.
+#
+# Mirrors the 30-point tier in config/scoring_prompt.txt - kept as a
+# separate structured file since scoring_prompt.txt is unstructured prose
+# written for an LLM, not machine-parseable. Retune by hand if the two
+# drift apart; no code changes needed either way.
+#
+# affiliation_type is a hint for how likely this background is to also
+# show up on engineer-centric sources (GitHub/Qiita): "engineer" backgrounds
+# are well covered there, "consultant"/"business" backgrounds mostly are
+# not and rely on the websearch source instead.
+companies:
+  - name: "リクルート"
+    aliases: ["Recruit", "リクルートホールディングス", "リクルートキャリア"]
+    affiliation_type: business
+  - name: "BCG"
+    aliases: ["Boston Consulting Group", "ボストンコンサルティンググループ"]
+    affiliation_type: consultant
+  - name: "マッキンゼー"
+    aliases: ["McKinsey", "マッキンゼー・アンド・カンパニー"]
+    affiliation_type: consultant
+  - name: "サイバーエージェント"
+    aliases: ["CyberAgent"]
+    affiliation_type: business
+  - name: "DeNA"
+    aliases: []
+    affiliation_type: engineer
+  - name: "楽天"
+    aliases: ["Rakuten"]
+    affiliation_type: engineer
+  - name: "アクセンチュア"
+    aliases: ["Accenture"]
+    affiliation_type: consultant
+  - name: "ソフトバンク"
+    aliases: ["SoftBank"]
+    affiliation_type: business
+  - name: "メルカリ"
+    aliases: ["Mercari"]
+    affiliation_type: engineer
+  - name: "IBM"
+    aliases: []
+    affiliation_type: engineer
+  - name: "Google"
+    aliases: ["グーグル"]
+    affiliation_type: engineer
+  - name: "Meta"
+    aliases: ["Facebook"]
+    affiliation_type: engineer
+  - name: "Microsoft"
+    aliases: ["マイクロソフト"]
+    affiliation_type: engineer
+  - name: "Amazon"
+    aliases: []
+    affiliation_type: engineer
+  - name: "Apple"
+    aliases: []
+    affiliation_type: engineer
+  - name: "OpenAI"
+    aliases: []
+    affiliation_type: engineer
+  - name: "Anthropic"
+    aliases: []
+    affiliation_type: engineer
+  - name: "NVIDIA"
+    aliases: []
+    affiliation_type: engineer
+  - name: "Stripe"
+    aliases: []
+    affiliation_type: engineer

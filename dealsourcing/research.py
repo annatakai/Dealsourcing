@@ -29,9 +29,7 @@ from pathlib import Path
 import requests
 
 from dealsourcing.config import settings
-
-SERPAPI_ENDPOINT = "https://serpapi.com/search"
-GOOGLE_CSE_ENDPOINT = "https://www.googleapis.com/customsearch/v1"
+from dealsourcing.websearch import search as websearch_search
 
 
 class Researcher(abc.ABC):
@@ -101,32 +99,7 @@ class SearchApiResearcher(Researcher):
         return queries
 
     def _search_one(self, query: str) -> list[dict]:
-        if self.provider == "serpapi":
-            resp = requests.get(
-                SERPAPI_ENDPOINT,
-                params={"q": query, "api_key": self.api_key, "num": self.max_results, "hl": "ja", "gl": "jp"},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return [
-                {"title": r.get("title"), "snippet": r.get("snippet"), "link": r.get("link")}
-                for r in data.get("organic_results", [])[: self.max_results]
-            ]
-        elif self.provider == "google_cse":
-            resp = requests.get(
-                GOOGLE_CSE_ENDPOINT,
-                params={"q": query, "key": self.api_key, "cx": settings.google_cse_id, "num": self.max_results},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return [
-                {"title": r.get("title"), "snippet": r.get("snippet"), "link": r.get("link")}
-                for r in data.get("items", [])[: self.max_results]
-            ]
-        else:
-            raise ValueError(f"Unknown SEARCH_API_PROVIDER: {self.provider}")
+        return websearch_search(query, max_results=self.max_results, provider=self.provider, api_key=self.api_key)
 
     def research(
         self,

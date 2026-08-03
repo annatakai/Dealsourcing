@@ -24,14 +24,13 @@ class EmailConfigError(RuntimeError):
     pass
 
 
-def send_daily_email(company: sqlite3.Row, category: str, scoring: dict) -> str:
-    """Returns the email_status string to store in sent_log ('sent', 'dry_run', or raises)."""
-    subject = build_subject(company, category, scoring)
-    body = build_body(company, category, scoring)
-
+def send_email(to: str, subject: str, body: str) -> str:
+    """Generic SendGrid send, reused by both the company- and
+    builder-sourcing pipelines. Returns the status string to store in a
+    log table ('sent', 'dry_run', or raises EmailConfigError)."""
     if settings.dry_run:
         print("=== DRY RUN: would send email ===")
-        print(f"To: {settings.email_to}")
+        print(f"To: {to}")
         print(f"Subject: {subject}")
         print(body)
         print("==================================")
@@ -43,7 +42,7 @@ def send_daily_email(company: sqlite3.Row, category: str, scoring: dict) -> str:
         raise EmailConfigError("EMAIL_FROM is not set to a SendGrid-verified sender identity.")
 
     payload = {
-        "personalizations": [{"to": [{"email": settings.email_to}]}],
+        "personalizations": [{"to": [{"email": to}]}],
         "from": {"email": settings.email_from},
         "subject": subject,
         "content": [{"type": "text/plain", "value": body}],
@@ -56,3 +55,10 @@ def send_daily_email(company: sqlite3.Row, category: str, scoring: dict) -> str:
     )
     resp.raise_for_status()
     return "sent"
+
+
+def send_daily_email(company: sqlite3.Row, category: str, scoring: dict) -> str:
+    """Returns the email_status string to store in sent_log ('sent', 'dry_run', or raises)."""
+    subject = build_subject(company, category, scoring)
+    body = build_body(company, category, scoring)
+    return send_email(settings.email_to, subject, body)

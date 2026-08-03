@@ -1,0 +1,36 @@
+# Search keywords for the builder-sourcing pipeline's keyword-driven
+# sources (Qiita article search, connpass event search, and the websearch
+# source's general founder-prep queries). Data, not code - tune freely.
+
+# Qiita article search: looking for engineers signaling they're about to
+# leave their job / already building something on the side.
+qiita_keywords:
+  - "退職しました 起業"
+  - "個人開発 リリース"
+  - "会社を辞めて"
+  - "フリーランス 独立"
+
+# connpass event search: startup/pitch/hackathon events likely to have
+# pre-founding builders as organizers or presenters.
+connpass_keywords:
+  - "スタートアップ"
+  - "ハッカソン"
+  - "ピッチ 起業"
+  - "個人開発"
+
+# General web search queries (SerpAPI/Google CSE via websearch_source.py),
+# run as-is (not combined with company/program names - those are built
+# separately from target_companies.yaml / accelerator_programs.yaml).
+#
+# The site: entries are how Wantedly and researchmap get covered: neither
+# has a usable public search API (Wantedly's public API is for embedding
+# company stories, not profile search; researchmap's real V2 API requires
+# a formal institutional application - see README) but both have public
+# profile pages Google already indexes.
+general_founder_prep_queries:
+  - "退職 起業します エンジニア"
+  - "退職 起業します コンサル"
+  - "ステルスモード 新規事業 準備中"
+  - "site:wantedly.com/id 起業 経歴"
+  - "site:researchmap.jp 起業 準備"
+  - "site:note.com 会社を辞めて 起業"

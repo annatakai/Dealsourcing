@@ -1,0 +1,41 @@
+# Accelerator/entrepreneur programs to search for cohort-selection
+# announcements. Mirrors the 25-point tier in config/scoring_prompt.txt.
+#
+# These do NOT get a dedicated per-program scraper/parser: real alumni
+# pages turned out to be too inconsistent to hand-parse reliably (1stRound
+# has a dedicated page, but Incubate Camp/Onlab announcements are scattered
+# across PR TIMES/TechCrunch Japan/thebridge.jp articles, and MUFG mixes
+# HTML pages with PDFs across cohorts). Instead, dealsourcing/builders/
+# sources/websearch_source.py searches for each program_name + a
+# selection-announcement keyword and runs matches through Ollama to
+# extract selectee names/affiliations - the same "let the LLM structure
+# messy text" approach ollama_client.py already uses for founder research.
+#
+# known_alumni_url is informational only (not fetched automatically yet -
+# add it to websearch queries by hand if a program's search results are
+# too noisy without it).
+programs:
+  - name: "東大IPC 1stRound"
+    known_alumni_url: "https://program.utokyo-ipc.co.jp/過去の採択企業/"
+  - name: "Incubate Camp"
+    known_alumni_url: null
+  - name: "MUFG Digital Accelerator"
+    known_alumni_url: "https://innovation.mufg.jp/accelerator/"
+  - name: "Open Network Lab"
+    known_alumni_url: "https://onlab.jp/"
+  - name: "Alchemist Accelerator"
+    known_alumni_url: null
+  - name: "Google Launchpad Accelerator Tokyo"
+    known_alumni_url: null
+  - name: "Tokyo Startup Gateway"
+    known_alumni_url: null
+  - name: "Plug and Play Japan Accelerator"
+    known_alumni_url: null
+  - name: "J-Startup"
+    known_alumni_url: "https://www.j-startup.go.jp/companies/"
+  - name: "X-HUB TOKYO"
+    known_alumni_url: null
+  - name: "Y Combinator"
+    known_alumni_url: "https://www.ycombinator.com/companies"
+  - name: "Antler Japan"
+    known_alumni_url: "https://www.antler.co/location/japan"

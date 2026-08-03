@@ -40,7 +40,11 @@ STRUCTURE_PROMPT_TEMPLATE = """あなたはベンチャーキャピタルのリ�
 上記4項目について、箇条書きで簡潔にまとめてください。"""
 
 
-def _call_ollama(prompt: str) -> str:
+def call_ollama(prompt: str) -> str:
+    """Generic single-shot Ollama call, reused by both the company- and
+    builder-sourcing pipelines - anywhere that needs "structure this text"
+    or "score this against a rubric" without inventing its own HTTP call.
+    """
     resp = requests.post(
         f"{settings.ollama_host}/api/generate",
         json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
@@ -56,7 +60,7 @@ def structure_founder_background(company_name: str, founder_name: str | None, ra
         founder_name=founder_name or "不明",
         raw_research=raw_research,
     )
-    return _call_ollama(prompt)
+    return call_ollama(prompt)
 
 
 _SECTION_HEADERS = [
@@ -133,7 +137,7 @@ def _extract_comment(response_text: str) -> str | None:
 
 def score_founder(structured_background: str) -> dict:
     prompt = load_scoring_prompt() + "\n\n--- 創業者情報 ---\n" + structured_background
-    response_text = _call_ollama(prompt)
+    response_text = call_ollama(prompt)
 
     sections = _extract_sections(response_text)
     total_score, grade = _extract_total_and_grade(response_text)

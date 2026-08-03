@@ -57,6 +57,19 @@ class Settings:
     # --- misc ---
     dry_run: bool = field(default_factory=lambda: _env("DEALSOURCING_DRY_RUN", "0") == "1")
 
+    # --- builder-sourcing pipeline (separate from the above) ---
+    github_token: str | None = field(default_factory=lambda: _env("GITHUB_TOKEN"))
+    qiita_token: str | None = field(default_factory=lambda: _env("QIITA_TOKEN"))
+    builder_db_path: Path = field(
+        default_factory=lambda: Path(_env("BUILDER_DB_PATH", str(DEFAULT_DB_PATH)))
+    )
+    builder_score_threshold: int = field(
+        default_factory=lambda: _env_int("BUILDER_SCORE_THRESHOLD", 70)
+    )
+    builder_email_to: str = field(
+        default_factory=lambda: _env("BUILDER_EMAIL_TO", _env("EMAIL_TO", "takai@genesiaventures.com"))
+    )
+
 
 def load_categories_config() -> dict:
     path = CONFIG_DIR / "categories.yaml"
@@ -66,6 +79,29 @@ def load_categories_config() -> dict:
 
 def load_scoring_prompt() -> str:
     path = CONFIG_DIR / "scoring_prompt.txt"
+    return path.read_text(encoding="utf-8")
+
+
+def load_target_companies() -> list[dict]:
+    path = CONFIG_DIR / "target_companies.yaml"
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)["companies"]
+
+
+def load_accelerator_programs() -> list[dict]:
+    path = CONFIG_DIR / "accelerator_programs.yaml"
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)["programs"]
+
+
+def load_builder_keywords() -> dict:
+    path = CONFIG_DIR / "builder_keywords.yaml"
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def load_builder_scoring_prompt() -> str:
+    path = CONFIG_DIR / "builder_scoring_prompt.txt"
     return path.read_text(encoding="utf-8")
 
 

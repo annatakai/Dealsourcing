@@ -115,22 +115,122 @@ control.
 
 ```
 dealsourcing/
-  config.py         env vars + config/categories.yaml loader
-  db.py             SQLite schema (companies, sent_log)
+  config.py         env vars + config/*.yaml loaders (both pipelines)
+  db.py             SQLite schema (companies/sent_log + builders/*)
   ingest.py         xlsx import + name-based dedupe
   classify.py       eligibility filter + category assignment
   scheduler.py      daily pick + idempotent sent-log
   research.py       pluggable web research (search API or manual file)
   ollama_client.py  structure findings + run the scoring rubric
+  websearch.py      generic SerpAPI/Google CSE call (shared by research.py
+                     and builders/sources/websearch_source.py)
   templates.py      builds the exact email body format
-  email_sender.py   SendGrid send (or dry-run print)
+  email_sender.py   generic send_email() + the company-alert template
+  builders/         the builder-sourcing pipeline (see below) - entirely
+                     separate from the company pipeline above; shares only
+                     db.py's connection helpers, ollama_client.call_ollama,
+                     and email_sender.send_email
 config/
-  categories.yaml       category matching rules (data, not code)
-  scoring_prompt.txt    the exact 100-point founder scoring rubric
+  categories.yaml            category matching rules (data, not code)
+  scoring_prompt.txt         the exact 100-point founder scoring rubric
+  target_companies.yaml      builder pipeline: companies to search for on
+                             GitHub/Qiita (mirrors scoring_prompt.txt's
+                             30-point tier)
+  accelerator_programs.yaml  builder pipeline: programs to search for
+                             selection announcements of (mirrors
+                             scoring_prompt.txt's 25-point tier)
+  builder_keywords.yaml      builder pipeline: Qiita/connpass/websearch
+                             search keywords
+  builder_scoring_prompt.txt builder pipeline's 100-point rubric
 run_ingest.py       one-off/re-run: import xlsx + reclassify
-run_daily.py        the daily job
+run_daily.py        the company-sourcing daily job (1 email/day)
+run_builder_scan.py the builder-sourcing job (event-driven alerts)
 tests/              unit tests against synthetic INITIAL-shaped fixtures
+                     and against the builder pipeline's DB logic
 ```
+
+## Builder-sourcing pipeline (`run_builder_scan.py`)
+
+A second, separate pipeline from the INITIAL-export flow above. Instead of
+scoring companies that already exist, it tries to catch people *before*
+they've founded anything:
+
+```
+複数ソースをスキャン
+  → GitHub: 対象企業の所属を名乗るユーザーの新規リポジトリ作成
+  → Qiita: 退職/独立を示唆する記事の投稿者
+  → connpass: スタートアップ関連イベントの主催者
+  → Web検索(SerpAPI/Google CSE): 「退職しました」等の言明、
+    Wantedly/researchmapの公開プロフィール、
+    アクセラレーター採択発表の記事
+  → シグナルを人物ごとにdedupe・蓄積
+  → 新しいシグナルが増えるたびに100点ルールで再採点
+    (config/builder_scoring_prompt.txt) + 過去のアクセラレーター
+    採択者との類似度スコアを加味
+  → 閾値(BUILDER_SCORE_THRESHOLD、デフォルト70点)を超えたら
+    その場でメール送信、以後は二度と送らない
+```
+
+Run it periodically (hourly/daily via cron, same deployment constraints as
+`run_daily.py` - Ollama must be reachable):
+
+```bash
+python run_builder_scan.py
+```
+
+Unlike `run_daily.py`, this is **not** capped at one email per day - it's
+event-driven, since the point is to contact someone the moment they look
+promising, not on a fixed schedule. A builder is re-scored every time new
+signals arrive (so a below-threshold candidate can cross the bar later as
+more evidence accumulates) but is never emailed twice.
+
+### What this can and can't actually predict
+
+Being upfront about the limits: this is signal detection + LLM scoring,
+not a trained ML time-to-event model. There isn't enough labeled data
+(who founded a company and when, with a history of prior signals) for
+Genesia or anyone else to fit something more rigorous. Two consequences:
+
+- **"起業予測時期" (estimated founding window)** is a rule-based bucket
+  (1ヶ月以内 / 3〜6ヶ月 / 6ヶ月〜1年 / 不明) driven by which signal fired,
+  not a calibrated date estimate.
+- **The accelerator "lookalike" score** (`dealsourcing/builders/
+  lookalike.py`) compares a candidate's profile against past selectees'
+  *post-selection* profiles (that's all the public data gives us) via an
+  LLM similarity judgment - a fuzzy prior that nudges the score, not a
+  trained classifier (this repo has no ML library; see requirements.txt).
+
+### Things that need your input before this fully runs unattended
+
+- **GitHub (`GITHUB_TOKEN`)**: not yet configured. Without it,
+  `github_source.py` is skipped entirely - unauthenticated search is
+  capped at ~10 req/min, too low to cover the target company list. Also
+  worth knowing going in: GitHub's `company:` search qualifier only
+  matches people who filled in that profile field, which skews this
+  source toward engineers and misses consultant/business-background
+  builders by construction - that's what websearch_source.py is for.
+- **Qiita (`QIITA_TOKEN`)**: optional. Works without it at 60 req/hour;
+  set it for 1000/hour.
+- **Web search (`SEARCH_API_KEY`)**: shared with the company pipeline's
+  research.py. Without it, `websearch_source.py` is skipped - this is the
+  source that covers accelerator-selection announcements, Wantedly, and
+  researchmap (neither has a usable public search API - Wantedly's public
+  API is for embedding company stories, not profile search; researchmap's
+  real V2 API requires a formal institutional application - so both are
+  covered via `site:`-scoped search queries instead, see
+  config/builder_keywords.yaml).
+- **connpass**: no key needed, works out of the box - but the API only
+  exposes event organizers, not attendee lists (connpass doesn't expose
+  those for privacy reasons).
+- **Email (`BUILDER_EMAIL_TO`, `BUILDER_SCORE_THRESHOLD`)**: reuses
+  `SENDGRID_API_KEY`/`EMAIL_FROM`/`DEALSOURCING_DRY_RUN` from the company
+  pipeline; only the recipient and alert threshold are separately
+  configurable.
+- **Accelerator alumni pages**: intentionally *not* scraped per-program -
+  real pages turned out too inconsistent to hand-parse reliably (some have
+  a dedicated page, others are scattered across PR TIMES/TechCrunch Japan
+  articles, others mix HTML and PDF across cohorts). Handled instead via
+  websearch_source.py searching for each program's selection announcement.
 
 ## Tests
 
@@ -140,5 +240,8 @@ python -m pytest tests/ -v
 
 Covers dedupe-across-files, eligibility filtering, category assignment
 (including the EdTech/MedTech substring-collision edge case), and the
-daily-pick/idempotency logic — all against synthetic fixtures shaped
-like real INITIAL exports, not your actual (private) data.
+daily-pick/idempotency logic for the company pipeline — all against
+synthetic fixtures shaped like real INITIAL exports, not your actual
+(private) data. For the builder pipeline: signal dedupe/merge logic and
+the score-then-alert-once-ever pipeline logic (both against a temp SQLite
+DB, no real network/Ollama calls).
