@@ -26,6 +26,20 @@ def test_funding_over_cap_is_ineligible(sample_xlsx_factory, row_builder, db_pat
     assert summary["ineligible"] == 1
 
 
+def test_series_a_and_later_is_ineligible(sample_xlsx_factory, row_builder, db_path):
+    path = sample_xlsx_factory("a.xlsx", [
+        row_builder("株式会社Seed", speeda_series="シード"),
+        row_builder("株式会社NoStage", speeda_series=None),
+        row_builder("株式会社SeriesA", speeda_series="シリーズA"),
+        row_builder("株式会社SeriesB", speeda_series="シリーズB"),
+    ])
+    ingest_files([path], db_path=db_path)
+    summary = classify_all(db_path=db_path)
+
+    assert summary["eligible"] == 2  # Seed + NoStage (unset stage is not evidence of Series A+)
+    assert summary["ineligible"] == 2
+
+
 def test_category_assignment_priority(sample_xlsx_factory, row_builder, db_path):
     path = sample_xlsx_factory("a.xlsx", [
         row_builder("EdTech株式会社", tags="EdTech, モバイルアプリ"),
