@@ -98,9 +98,10 @@ control.
   `run_daily.py` falls back to `ManualResearcher`, which expects you to
   paste research findings into `data/manual_research/<company_id>.txt`
   yourself before re-running — it tells you the exact path and company
-  when it blocks. Set `SEARCH_API_KEY` (+ `SEARCH_API_PROVIDER=serpapi`
-  or `google_cse`) in `.env` once you have a key, and it switches to
-  automatic search.
+  when it blocks. Set `SEARCH_API_KEY` (+ `GOOGLE_CSE_ID`) in `.env` once
+  you have a key, and it switches to automatic search. Defaults to Google
+  CSE (free tier: 100 queries/day) rather than SerpAPI (paid) - see
+  `.env.example` for setup and the query-budget note below.
 - **Email (`SENDGRID_API_KEY`, `EMAIL_FROM`)**: not yet configured. Set
   `DEALSOURCING_DRY_RUN=1` to test the whole pipeline without a real
   SendGrid account — it prints the email instead of sending it.
@@ -218,7 +219,21 @@ Genesia or anyone else to fit something more rigorous. Two consequences:
   API is for embedding company stories, not profile search; researchmap's
   real V2 API requires a formal institutional application - so both are
   covered via `site:`-scoped search queries instead, see
-  config/builder_keywords.yaml).
+  config/builder_keywords.yaml). Defaults to **Google CSE**, which has a
+  free tier (100 queries/day, no cost) - see
+  https://developers.google.com/custom-search/v1/overview to create a key
+  + search engine ID. Direct scraping of these sites without a search API
+  was tried and rejected: PR TIMES, TechCrunch Japan, researchmap, and
+  Wantedly all returned 403s to a plain HTTP fetch in testing (bot
+  protection), so a search API is the only reliable free path to this
+  coverage right now.
+  **Query budget**: as shipped, one `run_builder_scan.py` run issues
+  ~1 query per `config/accelerator_programs.yaml` entry plus
+  `config/builder_keywords.yaml`'s `general_founder_prep_queries` (~18
+  queries total). Running it hourly would use 432 queries/day, well over
+  the free tier - schedule it every few hours (e.g. every 6 hours = 72
+  queries/day) instead of hourly to stay within the free quota alongside
+  the company pipeline's own usage.
 - **connpass**: no key needed, works out of the box - but the API only
   exposes event organizers, not attendee lists (connpass doesn't expose
   those for privacy reasons).

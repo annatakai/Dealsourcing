@@ -44,7 +44,10 @@ class Settings:
     sendgrid_api_key: str | None = field(default_factory=lambda: _env("SENDGRID_API_KEY"))
 
     # --- web research ---
-    search_api_provider: str = field(default_factory=lambda: _env("SEARCH_API_PROVIDER", "serpapi"))
+    # Defaults to google_cse (free tier: 100 queries/day) rather than
+    # serpapi (paid) - see .env.example for setup and the query-budget note
+    # in README.md's builder-sourcing section.
+    search_api_provider: str = field(default_factory=lambda: _env("SEARCH_API_PROVIDER", "google_cse"))
     search_api_key: str | None = field(default_factory=lambda: _env("SEARCH_API_KEY"))
     google_cse_id: str | None = field(default_factory=lambda: _env("GOOGLE_CSE_ID"))
     research_max_results: int = field(default_factory=lambda: _env_int("RESEARCH_MAX_RESULTS", 5))
