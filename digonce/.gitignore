@@ -1,0 +1,6 @@
+outputs/*
+!outputs/example_synthetic/
+outputs/example_synthetic/pipe_scores_all.*
+outputs/example_synthetic/coordination_pairs.*
+configs/local_costs.yaml
+data/

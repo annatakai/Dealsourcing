@@ -1,0 +1,17 @@
+# Map canonical field -> column name in YOUR file, only where auto-detection fails.
+# Run `python scripts/inspect_csv.py <pipes|roads|breaks> <file>` to see what was detected.
+pipes:
+  pipe_id: FACILITYID
+  install_year: INSTALLDATE
+  material: MATERIAL
+  diameter_mm: DIAMETER        # use --diameter-unit in if values are inches
+  length_m: Shape__Length      # use --length-unit ft if values are feet
+  street_name: STREETNAME
+breaks:
+  pipe_id: MAIN_FACILITYID
+  break_date: BREAKDATE
+roads:
+  road_id: SEGMENTID
+  pci: PCI
+  functional_class: FUNCCLASS
+  street_name: FULLNAME
