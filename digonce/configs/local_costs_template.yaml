@@ -1,0 +1,39 @@
+# Copy to local_costs.yaml, replace every value with LOCAL evidence, then run
+#   python scripts/run_pipeline.py --config configs/local_costs.yaml ...
+# Record the source of each number in the comment next to it.
+reference_year: 2026
+currency: JPY
+costs:
+  is_placeholder: false          # set false only once every value below is sourced
+  basis_label: "LOCAL - <source, price year>"
+  discount_rate: 0.04            # MLIT CBA guideline
+  analysis_horizon_years: 30
+  pipe_unit_cost_a: null         # fit_cost_function() on bid tabulations: c = a*(D/100)^b [JPY/m]
+  pipe_unit_cost_b: null
+  excavation_cost_per_m3: null   # 積算基準 / contract unit rate
+  trench_restore_cost_per_m2_paved: null
+  trench_restore_cost_per_m2_unpaved: null
+  traffic_control_fraction: null
+  overhead_fraction: null
+  contingency_fraction: null
+  mobilisation_per_project: null
+  emergency_repair_cost_base: null      # work-order average per break at 100 mm
+  emergency_repair_diameter_exponent: null
+  social_cost_per_break: null
+  road_treatment_cost_per_m2:
+    preventive: null
+    mill_overlay: null
+    thick_overlay: null
+    reconstruction: null
+  cut_life_loss_fraction: 0.30   # literature range 0.1-0.5; replace with local study if available
+  resurface_design_life_years: null
+  user_delay_cost_per_day_per_1000_aadt: null
+  pipe_closure_days_per_100m: null
+  road_closure_days_per_100m: null
+  joint_closure_overlap_fraction: null
+  uncertainty:                   # triangular (low, high) multipliers around each value
+    pipe_unit: [0.8, 1.3]
+    excavation: [0.8, 1.4]
+    restoration: [0.8, 1.3]
+    road_unit: [0.8, 1.3]
+    emergency: [0.5, 2.0]
